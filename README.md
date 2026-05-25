@@ -79,7 +79,7 @@ Dự án mô phỏng hệ thống khóa cửa thông minh cho phép:
 ## Cách chạy dự án
 
 ### 1. IoT ESP32-S3 nối mạch và nạp code vào mạch.
-### 2. Tải app về điện thoại Android: 
+### 2. Tải app về điện thoại Android: [Download Smart Lock App APK](https://github.com/USERNAME/Smart-Lock/releases/download/v1.0.0/app-release.apk)
 ### 3. Chạy server.
 - Trước tiên, để triển khai lên server cần lưu toàn bộ cấu hình cần thiết của server vào docker image và push lên docker hub và để chế độ public
 - Tiếp theo cấu hình instance trên cloud hay máy ảo bất kỳ để chạy docker container dựa trên docker image đã lưu trên dockerhub
