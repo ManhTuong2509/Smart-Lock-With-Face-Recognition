@@ -1,0 +1,8 @@
+# ── OpenAI ────────────────────────────────────────────────────────────────────
+OPENAI_API_KEY=sk-...your-key-here...
+
+# ── Other services (fill in as needed) ───────────────────────────────────────
+# TELEGRAM_BOT_TOKEN=
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
+# AWS_REGION=

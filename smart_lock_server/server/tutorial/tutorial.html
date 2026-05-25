@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenDoorWithFace API Tutorial</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1f2933;
+            background: #f5f7fa;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #d9e2ec;
+            border-radius: 8px;
+            padding: 28px;
+        }
+
+        h1, h2, h3 {
+            color: #102a43;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        section {
+            border-top: 1px solid #d9e2ec;
+            margin-top: 28px;
+            padding-top: 20px;
+        }
+
+        code {
+            font-family: Consolas, "Courier New", monospace;
+        }
+
+        pre {
+            overflow-x: auto;
+            background: #102a43;
+            color: #f0f4f8;
+            border-radius: 6px;
+            padding: 16px;
+            line-height: 1.45;
+        }
+
+        .method {
+            display: inline-block;
+            min-width: 58px;
+            color: #ffffff;
+            background: #0b7285;
+            border-radius: 4px;
+            padding: 3px 7px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .note {
+            background: #e6f6ff;
+            border-left: 4px solid #0b7285;
+            padding: 12px 14px;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>OpenDoorWithFace API Tutorial</h1>
+        <p>
+            This server exposes face registration and recognition routes. JSON routes accept base64 images.
+            ESP32-S3-CAM should use the raw JPG routes because it can send the camera frame buffer directly.
+        </p>
+
+        <div class="note">
+            Use your server LAN IP from ESP32, for example <code>http://192.168.1.20:8000</code>.
+            Do not use <code>localhost</code> from the ESP32.
+        </div>
+
+        <section>
+            <h2>1. Load Model</h2>
+            <p>Call this once before recognition or registration routes.</p>
+            <p><span class="method">POST</span> <code>/model/init</code></p>
+            <pre><code>{
+  "det_size": [320, 320],
+  "device": "cuda"
+}</code></pre>
+            <h3>Response</h3>
+            <pre><code>{
+  "message": "InsightFace model loaded successfully.",
+  "status": "loaded"
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>2. Unload Model</h2>
+            <p>Unload the model from memory.</p>
+            <p><span class="method">DELETE</span> <code>/model/delete</code></p>
+            <h3>Response</h3>
+            <pre><code>{
+  "message": "InsightFace model unloaded successfully.",
+  "status": "unloaded"
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>3. Upload JPG From ESP32-S3-CAM</h2>
+            <p>Saves a raw JPG image to <code>server/uploads</code>. This route does not require the face model.</p>
+            <p><span class="method">POST</span> <code>/image/upload</code></p>
+            <p>Headers:</p>
+            <pre><code>Content-Type: image/jpeg</code></pre>
+            <p>Body: raw JPG bytes.</p>
+            <h3>Example Response</h3>
+            <pre><code>{
+  "success": true,
+  "message": "Image uploaded successfully.",
+  "path": "uploads/20260508T120000Z_abc123.jpg",
+  "width": 640,
+  "height": 480,
+  "bytes": 54321
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>4. Recognize Face From ESP32 JPG</h2>
+            <p>Recognizes a face from raw JPG bytes sent by ESP32-S3-CAM. If a face is detected but not found in the database, the server saves the JPG and the receive time.</p>
+            <p><span class="method">POST</span> <code>/face/recognize-jpg</code></p>
+            <p>Compatibility alias: <code>/face/regconize-jpg</code></p>
+            <p>Headers:</p>
+            <pre><code>Content-Type: image/jpeg</code></pre>
+            <p>Body: raw JPG bytes.</p>
+            <h3>Example Match Response</h3>
+            <pre><code>{
+  "found": true,
+  "metadata": {
+    "faiss_id": 0,
+    "user_name": "John Doe",
+    "user_id": "2a4b7f3a-1cc0-4d74-a8be-3e78d2e5d6f2"
+  },
+  "distance": 0.6,
+  "message": "Match found: John Doe"
+}</code></pre>
+            <h3>Example Unknown Response</h3>
+            <pre><code>{
+  "found": false,
+  "metadata": null,
+  "distance": 0.31,
+  "message": "No matching face found in the database."
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>5. Get Saved Unknown Face Images</h2>
+            <p>Returns saved unknown-face JPG images and the time each image was received by the server. Use <code>number=-1</code> to return all saved images, or a positive number to return the newest images.</p>
+            <p><span class="method">GET</span> <code>/face/unknown-jpg?number=-1</code></p>
+            <h3>Example Response</h3>
+            <pre><code>{
+  "count": 1,
+  "images": [
+    {
+      "received_at": "2026-05-14T10:30:00+00:00",
+      "path": "unknown_faces/20260514T103000Z_abc123.jpg",
+      "image_base64": "/9j/4AAQSkZJRgABAQ...",
+      "bytes": 54321
+    }
+  ]
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>6. Get Registered Users</h2>
+            <p>Returns users from the face database with user names and saved registered face images. Use <code>number=-1</code> to return all users, or a positive number to return the newest users.</p>
+            <p><span class="method">GET</span> <code>/face/users?number=-1</code></p>
+            <h3>Example Response</h3>
+            <pre><code>{
+  "count": 1,
+  "users": [
+    {
+      "faiss_id": 0,
+      "user_name": "John Doe",
+      "user_id": "2a4b7f3a-1cc0-4d74-a8be-3e78d2e5d6f2",
+      "registered_at": "2026-05-14T10:35:00+00:00",
+      "image_path": "registered_faces/20260514T103500Z_abc123.jpg",
+      "image_base64": "/9j/4AAQSkZJRgABAQ...",
+      "bytes": 54321
+    }
+  ]
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>7. Register Face From ESP32 JPG</h2>
+            <p>Registers a face from raw JPG bytes. Send only the user name; the server generates <code>user_id</code> with UUID.</p>
+            <p><span class="method">POST</span> <code>/face/register-jpg?user_name=John%20Doe</code></p>
+            <p>Headers:</p>
+            <pre><code>Content-Type: image/jpeg</code></pre>
+            <p>Body: raw JPG bytes.</p>
+            <h3>Example Response</h3>
+            <pre><code>{
+  "success": true,
+  "faiss_id": 0,
+  "user_id": "2a4b7f3a-1cc0-4d74-a8be-3e78d2e5d6f2",
+  "message": "Successfully registered 'John Doe' with faiss_id=0."
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>8. Base64 JSON Register</h2>
+            <p>Use this from web or mobile clients that already have a base64 image string.</p>
+            <p><span class="method">POST</span> <code>/face/register</code></p>
+            <pre><code>{
+  "image_base64": "...",
+  "user_name": "John Doe"
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>9. Base64 JSON Recognize</h2>
+            <p>Use this from web or mobile clients that already have a base64 image string.</p>
+            <p><span class="method">POST</span> <code>/face/recognize</code></p>
+            <pre><code>{
+  "image_base64": "..."
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>10. ESP32-S3-CAM Arduino Example</h2>
+            <p>Send <code>fb-&gt;buf</code> directly as the POST body.</p>
+            <pre><code>#include "WiFi.h"
+#include "HTTPClient.h"
+#include "esp_camera.h"
+
+const char* serverUrl = "http://192.168.1.20:8000/face/recognize-jpg";
+
+void sendPhoto() {
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Camera capture failed");
+    return;
+  }
+
+  HTTPClient http;
+  http.begin(serverUrl);
+  http.addHeader("Content-Type", "image/jpeg");
+
+  int statusCode = http.POST(fb-&gt;buf, fb-&gt;len);
+  Serial.printf("HTTP status: %d\n", statusCode);
+  Serial.println(http.getString());
+
+  http.end();
+  esp_camera_fb_return(fb);
+}</code></pre>
+        </section>
+
+        <section>
+            <h2>11. Health Check</h2>
+            <p><span class="method">GET</span> <code>/health</code></p>
+            <pre><code>{
+  "status": "ok"
+}</code></pre>
+        </section>
+    </main>
+</body>
+</html>
