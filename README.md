@@ -6,7 +6,7 @@ Hệ thống khóa cửa thông minh sử dụng ESP32-S3, keypad 4x3, LCD I2C, 
 
 Video demo dự án:
 
-[![Watch the demo](https://youtu.be/sDn0kbrZ_t4?si=GcQfA7UxtiWSUyrY)
+[![Watch the demo](https://youtu.be/sDn0kbrZ_t4?si=GcQfA7UxtiWSUyrY)]
 
 ## Tổng quan dự án
 
